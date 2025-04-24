@@ -7,11 +7,10 @@ import logging
 from dotenv import load_dotenv
 import os
 from bad_words import bad_words
+import re
 
 load_dotenv()
 token = os.getenv("DISCORD_BOT_TOKEN")
-
-
 
 
 mod_role = '🦋 .  Moderator'
@@ -23,7 +22,7 @@ intents.message_content = True
 intents.members  = True
 
 
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
@@ -33,15 +32,22 @@ async def on_ready():
 async def on_member_join(member):
      await member.send(f"Hey {member.name}! Welcome to the server, have fun, make new friends, and follow the rules!")
 
+
 @bot.event
 async def on_message(message):
-     if message.author == bot.user:
-          return
-     for word in bad_words:
-      if word in message.content.lower():
-          await message.delete()
-          await message.channel.send(f"{message.author.mention} please avoid from using bad language and let's keep this clean!")
-     await bot.process_commands(message)
+    if message.author == bot.user:
+        return
+
+    msg_content = message.content.lower()
+    for word in bad_words:
+        pattern = r'\b' + re.escape(word) + r'\b'
+        if re.search(pattern, msg_content):
+            await message.delete()
+            await message.channel.send(f"{message.author.mention} please avoid using bad language and let's keep this clean!")
+            return  
+
+    await bot.process_commands(message)
+
 
 @bot.event
 async def on_member_remove(member):
@@ -151,6 +157,8 @@ async def help(ctx):
     embed.add_field(name="!dice_roll", value="Roll a dice.", inline=False)
     embed.add_field(name="!math", value="Solve a random math question.", inline=False)
     embed.add_field(name="!poll <question>", value="Create a poll with a question.", inline=False)
+    embed.add_field(name="!numberguess", value="Play a 'guess the number' game with the bot", inline=False)
+
     await ctx.send(embed=embed)
 
 
@@ -449,6 +457,52 @@ async def poll(ctx, *, question):
      await poll_message.add_reaction("👍")
      await poll_message.add_reaction("👎")
     
+
+
+@bot.command()
+async def numberguess(ctx):
+    await ctx.send("Let's play the number guessing game! Type `!guess <your guess>` to play.")
+
+    await ctx.send("Enter the maximum range (e.g., 50): ")
+    max_range_message = await bot.wait_for("message", check=lambda m: m.author == ctx.author)
+    max_ran = int(max_range_message.content)
+
+    await ctx.send("Enter the minimum range (e.g., 1): ")
+    min_range_message = await bot.wait_for("message", check=lambda m: m.author == ctx.author)
+    min_ran = int(min_range_message.content)
+
+    target = random.randint(min_ran, max_ran)
+    counter = 0
+
+    # Game loop
+    while True:
+        await ctx.send("Enter your guess (or type 'quit' to quit): ")
+
+        guess_message = await bot.wait_for("message", check=lambda m: m.author == ctx.author)
+
+        # Handle quitting the game
+        if guess_message.content.lower() == "quit":
+            await ctx.send(f"Goodbye! The number was {target}.")
+            break
+
+        # Handle the guess logic
+        try:
+            guess = int(guess_message.content)
+            counter += 1
+            if guess == target:
+                await ctx.send(f"Congratulations! You have guessed the number, it was {target}. It took you {counter} attempts!")
+                break
+            elif guess > target:
+                await ctx.send("Too high!")
+            elif guess < target:
+                await ctx.send("Too low!")
+        except ValueError:
+            await ctx.send("Please enter a valid number!")
+
+
+
+
+
 
 # Run the bot
 bot.run(token, log_handler=handler, log_level=logging.DEBUG )
