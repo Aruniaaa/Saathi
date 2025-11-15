@@ -10,11 +10,12 @@ from supabase import Client, create_client
 import os
 from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
-from .models import Profile
+from .models import Profile, Quizzes
 from dotenv import load_dotenv
 from functools import wraps
 from markdown_it import MarkdownIt
 from mdit_py_plugins.texmath import texmath_plugin
+from datetime import timedelta
 
 
 load_dotenv()
@@ -126,6 +127,7 @@ def quiz_gen(request):
                 return render(request, "website/quiz_gen.html", {"message" : str(e)})
 
             print(quiz_dict)
+            print(len(quiz_dict))
 
 
             request.session["quiz"] = quiz_dict
@@ -150,14 +152,145 @@ def take_quiz(request):
 
 
 @login_required
-def submit_quiz(request):
-    pass
+def submit_quiz(request): 
+    if request.method == "POST":
+        score = 0
+        wrong_indices = []
+
+        quiz = request.session.get("quiz")
+        questions = len(quiz)
+        
+        for i in range(questions):
+            correct_letter = quiz[i]["answer"]
+            correct_index = ord(correct_letter) - 65
+            if correct_index + 1 == int(request.POST.get(f"question{i + 1}")):
+                score += 1
+            else:
+                wrong_indices.append(i)
+
+        
+        user_id = request.session.get("user_id")
+        profile = Profile.objects.get(supabase_id=user_id)
+
+        new_quiz = Quizzes(user_id=profile, correct_count=score, total_questions=questions, accuracy=score / questions * 100)
+        new_quiz.save()
+
+        request.session.pop("quiz", None)
+
+        username = request.session.get("username")
+
+        if score != questions:
+
+            wrong_questions = ""
+
+            for index in wrong_indices:
+                question = quiz[index]["question"]
+                correct_letter = quiz[index]["answer"]
+                correct_index = ord(correct_letter) - 65
+                correct_option = quiz[index]["options"][correct_index]
+
+
+                string = f"\nThe question was : {question} | Correct answer was: {correct_option}"
+                wrong_questions += string
+                                               
+
+            
+            prompt = f"""Give me a clear explanation for each question I got wrong and help me understand the concept behind the correct answer. 
+                Here are the questions I missed:
+
+                {wrong_questions}
+
+                Explain why the correct answer is right, what idea I misunderstood, and guide me to the correct reasoning without giving any extra unrelated info."""
+            
+            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions})
+        
+        else:
+            prompt = f"No prompt to see here! Congratulations for acing the test!<3"
+            
+            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions})
+        
+                       
 
 
 
 @login_required
 def progress(request):
-    pass
+    
+    if request.method == "GET":
+
+        user_id = request.session.get("user_id")
+        profile = Profile.objects.filter(supabase_id=user_id).first()
+        total_quizzes_taken_30 = Quizzes.objects.filter(user_id=profile).order_by('-timestamp')[:30]
+        total_quizzes_taken =  Quizzes.objects.filter(user_id=profile)
+        total_questions_answered = 0
+        accuracies = []
+        streak = 0
+
+        for quiz in total_quizzes_taken_30:
+
+            total_questions_answered += quiz.total_questions
+            accuracies.append(quiz.accuracy)
+
+        i = 0
+
+        while (i < len(total_quizzes_taken) - 1 and (total_quizzes_taken[i].timestamp.date() - total_quizzes_taken[i + 1].timestamp.date()) == timedelta(days=1)):
+            streak += 1
+            i+= 1
+
+        improvement_percentage = 0
+        if len(accuracies) >= 10:  
+
+            first_5_avg = sum(accuracies[-5:]) / 5 
+            last_5_avg = sum(accuracies[:5]) / 5    
+            
+            if first_5_avg > 0:  
+                improvement_percentage = ((last_5_avg - first_5_avg) / first_5_avg) * 100
+        
+        avg_acc = sum(accuracies) / len(accuracies)  if accuracies else 0
+        max_acc = max(accuracies) if accuracies else 0
+
+        context = {
+            'total_quizzes': len(total_quizzes_taken),
+            'total_questions': total_questions_answered,
+            'improvement': round(improvement_percentage, 1),
+            'avg_acc': round(avg_acc, 1),
+            'best_acc': round(max_acc, 1),
+            'streak': streak,
+            'accuracies': json.dumps(accuracies)  
+        }
+
+
+        return render(request, "website/progress.html", context)
+
+"""
+
+Over-writing the progress view with hardcoded values for the demo, 
+this func can easily be removed during actual production/deployment.
+
+"""
+@login_required
+def progress(request):
+    
+    if request.method == "GET":
+
+        context = {
+            'total_quizzes': 42,
+            'total_questions': 378,
+            'improvement': 24.7,
+            'avg_acc': 82.3,
+            'best_acc': 96.5,
+            'streak': 67,
+            'accuracies': json.dumps([
+            94.5, 91.2, 89.7, 93.8, 88.4, 67.67, 92.6, 87.3, 76.2, 89.9,
+            91.8, 0, 93.4, 29.5, 87.1, 92.3, 89.2, 20, 88.9, 91.5,
+            45.9, 90.4, 67, 88, 93.7, 89.5, 91.1, 87, 94.3, 90.8,
+            78, 92.5, 89.3, 93.1, 87.4, 0, 0, 95.6, 90.2, 92.8,
+            89.6, 23.2
+            ])
+        }
+
+
+        return render(request, "website/progress.html", context)
 
 
 

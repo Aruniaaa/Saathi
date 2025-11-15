@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+{% load static %}
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saathi - Quiz Submitted</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#fe7474",
+                        "background-light": "#ffffff",
+                        "background-dark": "#0D0F14",
+                        "accent-1": "#c7b7ff",
+                        secondary: "#ffa8a8",
+                        "text-main": "#ffffff",
+                        "text-light": "#1f2937",
+                        "text-dark": "#ffffff"
+                    },
+                    fontFamily: {
+                        display: ["Space Grotesk", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "8px",
+                    },
+                },
+            },
+        };
+    </script>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased">
+<div class="flex flex-col min-h-screen">
+<header class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<nav class="flex items-center justify-between">
+<a class="flex items-center space-x-2" href="{% url 'home' %}">
+<img src="{% static 'flower.png' %}" class="h-10 w-10" />
+<span class="font-bold text-xl text-text-light dark:text-text-dark">Saathi</span>
+</a>
+<div class="hidden md:flex items-center justify-center flex-1 space-x-6">
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'chat' %}">Chat</a>
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'take_quiz' %}">Take a Quiz</a>
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'quiz_gen' %}">Make a Quiz</a>
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'progress' %}">Progress</a>
+</div>
+<div class="hidden md:flex items-center space-x-6">
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'home' %}">Home</a>
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'contact' %}">Contact Us</a>
+</div>
+<button class="md:hidden">
+<span class="material-icons-outlined text-text-light dark:text-text-dark">menu</span>
+</button>
+</nav>
+</header>
+<main class="flex-grow flex items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
+<section class="w-full max-w-2xl mx-auto text-center">
+<div class="mb-10">
+<h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-text-main mb-2">Congratulations {{ username }} !</h1>
+<p class="text-lg text-gray-400">Your quiz has been submitted successfully.</p>
+</div>
+<div class="bg-gray-900/40 border border-gray-800 rounded-lg p-8 sm:p-12 mb-12">
+<p class="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Your Score</p>
+<p class="text-6xl sm:text-7xl font-bold text-accent-1">{{ score }}</p>
+<p class="text-xl font-medium text-text-main mt-1">{{ score }} out of {{ total }} correct</p>
+</div>
+<div class="text-left bg-gray-900/40 border border-gray-800 rounded-lg p-6 sm:p-8">
+<h2 class="text-xl font-bold text-text-main mb-4">Want to improve?</h2>
+<p class="text-gray-300 mb-6">Copy the prompt below and ask Saathi for a detailed explanation of the questions you got wrong.</p>
+<div class="relative bg-background-dark border border-gray-700 rounded-lg p-4 font-mono text-sm text-gray-300">
+<p id="prompt-text">{{ prompt }}</p>
+<button class="absolute top-2 right-2 p-2 rounded-md bg-gray-700 hover:bg-gray-600 transition-colors" onclick="copyToClipboard()" title="Copy to clipboard">
+<span class="material-icons-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<div class="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 bg-primary text-background-dark font-bold rounded-DEFAULT shadow-lg hover:opacity-90 transition-opacity" href="#">
+                    Ask Saathi Now
+                    <span class="material-icons-outlined text-base">arrow_forward</span>
+</a>
+<a class="w-full sm:w-auto inline-block px-8 py-3 bg-gray-700/50 text-text-main font-bold rounded-DEFAULT hover:bg-gray-700 transition-colors" href="#">
+                    Take Another Quiz
+                </a>
+</div>
+</section>
+</main>
+<footer class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-800 mt-auto">
+<div class="flex flex-col sm:flex-row items-center justify-between">
+<div class="flex items-center space-x-2">
+<img src="{% static 'flower.png' %}" class="h-10 w-10" />
+<span class="font-bold text-xl text-text-dark">Saathi</span>
+</div>
+<p class="text-gray-500 dark:text-gray-400 text-sm mt-4 sm:mt-0">
+                © 2025 Saathi. All rights reserved.
+            </p>
+</div>
+</footer>
+</div>
+<script>
+    function copyToClipboard() {
+        const promptText = document.getElementById('prompt-text').innerText;
+        navigator.clipboard.writeText(promptText).then(() => {
+
+            alert('Prompt copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+        });
+    }
+</script>
+
+</body></html>

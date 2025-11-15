@@ -8,3 +8,11 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class Quizzes(models.Model):
+    user_id = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    correct_count = models.IntegerField(null=False)
+    total_questions = models.IntegerField(null=False)
+    accuracy = models.FloatField(null=False)
