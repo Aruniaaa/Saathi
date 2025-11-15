@@ -48,7 +48,14 @@
       <img src="{% static 'flower.png' %}" class="h-10 w-10" />
       <span class="font-bold text-xl text-text-light dark:text-text-dark">Saathi</span>
     </a>
-    
+
+    <div class="hidden md:flex items-center justify-center flex-1 space-x-6 ml-28">
+    <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'chat' %}">Chat</a>
+    <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'quiz_gen' %}">Make a Quiz</a>
+    <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'progress' %}">Progress</a>
+    <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'take_quiz' %}">Take a Quiz</a>
+    </div>
+        
     <div class="hidden md:flex items-center gap-3">
       {% if not username %}
         <a class="text-sm font-medium text-white/70 transition-colors hover:text-white" href="{% url 'login' %}">Log In</a>

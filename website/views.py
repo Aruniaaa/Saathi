@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
-from .llm import process
+from .utils import process, return_prompt, get_quiz
 import markdown
 from supabase import Client, create_client
 import os
@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from functools import wraps
 from markdown_it import MarkdownIt
 from mdit_py_plugins.texmath import texmath_plugin
+
 
 load_dotenv()
 
@@ -100,7 +101,59 @@ class ChatAPI(View):
 
 @login_required
 def quiz_gen(request):
+    
+    if request.method == "GET":
+        return render(request, "website/quiz_gen.html", {})
+    elif request.method == "POST":
+        print("GOT ITTT")
+        try:
+            content = request.POST.get('content', None)
+            file = request.FILES.get('uploaded_file', None)
+
+            if not content and not file:
+                return render(request, "website/quiz_gen.html", {"message" : "Both fields can not be empty! Please upload some content."})
+
+            prompt = return_prompt(file, content)
+
+            quiz = get_quiz(prompt)
+
+            try:
+
+                quiz_dict = json.loads(quiz)
+
+            except Exception as e:
+                print(e)
+                return render(request, "website/quiz_gen.html", {"message" : str(e)})
+
+            print(quiz_dict)
+
+
+            request.session["quiz"] = quiz_dict
+
+            return render(request, "website/quiz_gen.html", {
+                "generated": True
+            })
+        except Exception as e:
+                print(e)
+                return render(request, "website/quiz_gen.html", {"message" : str(e)})
+
+@login_required
+def take_quiz(request):
+    
+    if request.method == "GET":
+        quiz = request.session.get("quiz")
+        if quiz:    
+            return render(request, "website/take_quiz.html", {"questions" : quiz})
+        else:
+            return render(request, "website/quiz_404.html", {})
+
+
+
+@login_required
+def submit_quiz(request):
     pass
+
+
 
 @login_required
 def progress(request):

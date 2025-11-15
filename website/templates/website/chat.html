@@ -46,6 +46,7 @@
 <div class="hidden md:flex items-center justify-center flex-1 space-x-6">
 <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'quiz_gen' %}">Make a Quiz</a>
 <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'progress' %}">Progress</a>
+<a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'take_quiz' %}">Take a Quiz</a>
 </div>
 <div class="hidden md:flex items-center space-x-6">
 <a class="text-gray-300 hover:text-primary transition-colors" href="{% url 'home' %}">Home</a>
@@ -73,6 +74,15 @@
               Ask
             </button>
 </div>
+
+   <div id="loader" class="hidden flex flex-col items-center justify-center py-8">
+        <div class="relative w-12 h-12 mb-4">
+            <div class="absolute top-0 left-0 w-full h-full border-4 border-primary/20 rounded-full"></div>
+            <div class="absolute top-0 left-0 w-full h-full border-4 border-primary rounded-full border-t-transparent animate-spin"></div>
+        </div>
+        <p class="text-gray-400 text-sm">Saathi is thinking...</p>
+    </div>
+
 <div class="w-full max-w-4xl mx-auto text-left">
   <div class="flex items-center space-x-3 mb-6">
     <svg fill="#FE7474" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="m236.4 83.1-99.8-57.6a16.1 16.1 0 0 0-16.2 0L20.6 82.4a15.9 15.9 0 0 0-8.2 14.1v115a16 16 0 0 0 16 16h200a16 16 0 0 0 16-16v-115a15.9 15.9 0 0 0-8-14.4Zm-8.4 122.3h-184V102l92-53.1 92 53.1ZM128.5 152.1 36.6 98.7l10-17.4L128 126.8l81.4-45.5 10 17.4Z"></path></svg>
@@ -106,7 +116,8 @@
     const input = document.getElementById("input")
     const explanation = document.getElementById("explanation")
 
-    button.addEventListener('click', () => {
+    button.addEventListener('click', () => 
+    {
       console.log("Recognised")
       const text = input.value.trim()
       input.value = ''
@@ -114,26 +125,39 @@
 
       else
       {
-        explanation.innerHTML = "Saathi is thinking..."
-        fetch('/api', {
+         explanation.classList.add('hidden')
+         loader.classList.remove('hidden')
+
+        fetch('/api', 
+        {
           method : 'POST',
-          headers : {
+          headers : 
+          {
             'Content-Type' : 'application/json',
           },
           body : JSON.stringify({'query' : text})
         })
-        .then(response => {
+        .then(response => 
+        {
           if(!response.ok)
           {
             throw new Error("Network response was not OK.")
           }
           return response.json()
         })
-        .then(data => {
+        .then(data => 
+        {
+
+            loader.classList.add('hidden')
+            explanation.classList.remove('hidden')
             explanation.innerHTML = data.response
+
         })
-        .catch (error => {
-          console.error('Error occured: ', error)
+        .catch (error => 
+        {
+            loader.classList.add('hidden')
+            explanation.classList.remove('hidden')
+            explanation.innerHTML = 'Sorry, something went wrong. Please try again.'
         });
       }
     })
