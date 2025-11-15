@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "*"
+torch = "*"
+torchvision = "*"
+transformers = "*"
+huggingface-hub = "*"
+accelerate = "*"
+langchain-community = "*"
+langchain = "*"
+langchain-ollama = "*"
+markdown = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

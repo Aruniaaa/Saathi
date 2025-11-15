@@ -1,0 +1,8 @@
+django
+markdown
+markdown-it-py
+supabase
+python-dotenv
+psycopg2-binary
+google-genai
+mdit-py-plugins
