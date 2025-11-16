@@ -13,7 +13,6 @@ client = genai.Client(api_key=api_key)
 
 def process(query, context):
     try:
-        print("Processing...")
         
 
         prompted_query = f"""

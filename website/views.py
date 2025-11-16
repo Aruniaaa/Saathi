@@ -62,13 +62,11 @@ class ChatAPI(View):
 
         try:
 
-            # Try to parse JSON
+
             data = json.loads(request.body)
-            print("Parsing the input...")
 
 
             query = data.get('query', '').strip()
-            print("Got the query!!")
 
 
             if not query:
@@ -116,7 +114,6 @@ def quiz_gen(request):
     if request.method == "GET":
         return render(request, "website/quiz_gen.html", {})
     elif request.method == "POST":
-        print("GOT ITTT")
         try:
             content = request.POST.get('content', None)
             file = request.FILES.get('uploaded_file', None)
@@ -135,9 +132,6 @@ def quiz_gen(request):
             except Exception as e:
                 print(e)
                 return render(request, "website/quiz_gen.html", {"message" : str(e)})
-
-            print(quiz_dict)
-            print(len(quiz_dict))
 
 
             request.session["quiz"] = quiz_dict
