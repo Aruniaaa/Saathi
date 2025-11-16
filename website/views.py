@@ -75,9 +75,19 @@ class ChatAPI(View):
                 return JsonResponse({
                     'error': 'No query provided'
                 }, status=400)
+            
+            context = request.session.get("context", [])
+           
 
+            bot_response = process(query, context[-2: ])
 
-            bot_response = process(query)
+            context.append({"user_message" : query, "bot_response" : bot_response})
+
+            if len(context) > 2:
+
+                context = context[-2: ]
+
+            request.session["context"] = context
 
             md = MarkdownIt().use(texmath_plugin)
             bot_response = md.render(bot_response)
