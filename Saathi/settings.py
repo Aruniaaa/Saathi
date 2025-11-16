@@ -19,7 +19,7 @@ load_dotenv()
 
 password = os.getenv("POSTGRESQL_PASS")
 database_url  = os.getenv("DATABASE_URL")
-allowed_host = os.getenv("ALLOWED_HOSTS")
+allowed_host = os.getenv("ALLOWED_HOSTS").split(',')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -32,7 +32,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-_zkjfeh%5zg=ij99sana#t*c=2pbv+xtlz3!x7!u90^1sh(w*3'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [allowed_host]
 
