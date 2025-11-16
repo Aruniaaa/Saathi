@@ -8,3 +8,4 @@ google-genai
 mdit-py-plugins
 PyMuPDF
 python-docx
+dj_database_url
