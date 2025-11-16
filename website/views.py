@@ -174,7 +174,10 @@ def submit_quiz(request):
 
         
         user_id = request.session.get("user_id")
-        profile = Profile.objects.get(supabase_id=user_id)
+        profile, created = Profile.objects.get_or_create(
+            supabase_id=user_id,
+            defaults={'supabase_id': user_id}
+        )
 
         new_quiz = Quizzes(user_id=profile, correct_count=score, total_questions=questions, accuracy=score / questions * 100)
         new_quiz.save()
