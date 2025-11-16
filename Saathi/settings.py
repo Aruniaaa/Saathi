@@ -37,6 +37,11 @@ DEBUG = debug
 
 ALLOWED_HOSTS = allowed_host
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://saathi-production-1513.up.railway.app',
+    'https://*.railway.app',  
+]
+
 
 # Application definition
 
