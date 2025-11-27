@@ -11,3 +11,9 @@ python-docx
 dj_database_url
 gunicorn
 whitenoise
+langchain
+langchain-core
+langchain-community
+langchain-anthropic
+langchain_google_genai
+chromadb

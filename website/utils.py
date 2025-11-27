@@ -3,12 +3,37 @@ import docx
 from google import genai
 from dotenv import load_dotenv
 import os
+from langchain_core.documents import Document
+from langchain.agents import create_agent
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_core.tools import tool
+from langchain_community.vectorstores import Chroma
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+
+
+load_dotenv()
+
+api_key = os.getenv("GEMINI_KEY")
+
+embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=api_key)
+
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=api_key)
+
+
+vectorstore = Chroma(
+    collection_name="Quizzes",
+    embedding_function=embeddings
+)
+
+
 
 load_dotenv()
 
 api_key  = os.getenv("GEMINI_KEY")
 
 client = genai.Client(api_key=api_key)
+
 
 
 def process(query, context):
@@ -162,11 +187,65 @@ def get_quiz(prompt):
         "response_mime_type": "application/json"
         }
     )
-    
+
     return response.text
 
 
 
+def store_in_vdb(wrong_questions, user_id):
+
+    docs = [
+        Document(
+            page_content=wrong_questions,
+            metadata={
+                "user_id": user_id
+            }
+        )
+    ]
+
+    vectorstore.add_documents(docs)
+
+
+@tool
+def retrieve_similar_quizzes(user_id: str, wrong_questions: str):
+    """Get similar quizzes to the last quiz that the user took to analyze patterns and generate feedback.
+
+    Args:
+        user_id: The unique id of the user whose patterns and habits we're analyzing.
+        wrong_questions: A string containing what questions the user got wrong,
+                         what the correct answer was, and what the user's answer was.
+
+    Returns:
+        A list of similar quiz documents from the vector database.
+    """
+
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=f"""Here is some info on a quiz, return a 3-5 word query for a RAG search to get similar quizzes so that
+        an AI agent can give the user feedback on similar quizzes and analyse where they went wrong. Return words like 'algebra' or 'trignometry' or 'economics'.
+        Output ONLY the query, no explanation, no punctuation.
+        Here is the quiz info : {wrong_questions}"""
+        )
+
+    results = vectorstore.similarity_search(
+        query=response.candidates[0].content.parts[0].text,
+        k=3,
+        filter={"user_id": user_id}
+    )
+
+    print(results)
+
+    return results
+
+
+
+
+agent = create_agent(
+    model=llm,
+    tools=[retrieve_similar_quizzes],
+    system_prompt="You are Saathi, you analyze student quiz performance, retrieve similar past quizzes, detect patterns, and give personalized study advice. Use the retrieval tool when needed."
+)
 
 
 
