@@ -58,7 +58,7 @@
 </nav>
 </header>
 <main class="flex-grow w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-<form method="POST" action="{% url 'submit_quiz' %}">
+<form id="form" method="POST" action="{% url 'submit_quiz' %}">
 {% csrf_token %}
 <div class="space-y-12">
 {% for question in questions %}
@@ -68,13 +68,13 @@
                         {{ forloop.counter }}
                     </div>
 <div class="flex-grow">
-<h2 class="text-xl md:text-2xl font-bold text-text-main mb-6">{{ question.question }}</h2>
+<h2 class="text-xl md:text-2xl font-bold text-text-main mb-6">{{ question.question|safe }}</h2>
 <div class="space-y-3">
 {% for option in question.options %}
 <label class="flex items-center p-4 bg-gray-900/40 border border-gray-700 rounded-md cursor-pointer hover:bg-gray-800/60 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/10">
-<input class="sr-only" name="question{{ forloop.parentloop.counter }}" type="radio" value="{{ forloop.counter }}"/>
+<input class="sr-only" name="question{{ forloop.parentloop.counter }}" type="radio" value="{{ forloop.counter }}" required/>
 <span class="w-5 h-5 rounded-full border-2 border-gray-600 flex-shrink-0 mr-4 grid place-items-center after:content-[''] after:w-2.5 after:h-2.5 after:rounded-full after:bg-primary after:scale-0 checked:after:scale-100 transition-transform"></span>
-<span class="text-gray-300">{{ option }}</span>
+<span class="text-gray-300">{{ option|safe }}</span>
 </label>
 {% endfor %}
 </div>
@@ -84,7 +84,7 @@
 {% endfor %}
 </div>
 <div class="mt-12 flex justify-center">
-<button type="submit" class="px-8 py-3 bg-primary text-background-dark font-bold rounded-DEFAULT shadow-lg hover:opacity-90 transition-opacity">
+<button id="submit-btn" type="submit" class="px-8 py-3 bg-primary text-background-dark font-bold rounded-DEFAULT shadow-lg hover:opacity-90 transition-opacity">
 Submit Quiz
 </button>
 </div>
@@ -102,5 +102,61 @@ Submit Quiz
 </div>
 </footer>
 </div>
+<script>
 
+
+    const button = document.getElementById('submit-btn');
+    const form = document.getElementById('form');
+
+    function validateRadioGroups(form) {
+      const radioInputs = form.querySelectorAll('input[type="radio"].sr-only');
+
+
+      const radioGroups = {};
+      radioInputs.forEach(radio => {
+        const name = radio.name;
+        if (!radioGroups[name]) {
+          radioGroups[name] = [];
+        }
+        radioGroups[name].push(radio);
+      });
+
+
+      const unansweredGroups = [];
+      for (const [name, radios] of Object.entries(radioGroups)) {
+        const hasChecked = radios.some(radio => radio.checked);
+        if (!hasChecked) {
+          unansweredGroups.push(name);
+        }
+      }
+
+      if (unansweredGroups.length > 0) {
+        console.log('Unanswered questions:', unansweredGroups);
+        return false;
+      }
+
+      return true;
+    }
+
+     form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        let can_submit = validateRadioGroups(form);
+
+        if (can_submit)
+        {
+            button.disabled = true;
+            button.textContent = 'Submitting...';
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            form.submit();
+        }
+        else
+        {
+            alert('Please answer all questions before submitting.');
+        }
+
+    });
+
+
+</script>
 </body></html>

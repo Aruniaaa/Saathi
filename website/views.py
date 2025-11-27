@@ -5,7 +5,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
 from .utils import process, return_prompt, get_quiz
-import markdown
 from supabase import Client, create_client
 import os
 from django.shortcuts import redirect
@@ -16,6 +15,7 @@ from functools import wraps
 from markdown_it import MarkdownIt
 from mdit_py_plugins.texmath import texmath_plugin
 from datetime import timedelta
+from .utils import store_in_vdb, agent
 
 
 load_dotenv()
@@ -128,6 +128,10 @@ def quiz_gen(request):
             try:
 
                 quiz_dict = json.loads(quiz)
+                md = MarkdownIt().use(texmath_plugin)
+
+                for i in range(len(quiz_dict)):
+                    quiz_dict[i]['question'] = md.render(quiz_dict[i]['question'])
 
             except Exception as e:
                 print(e)
@@ -181,7 +185,6 @@ def submit_quiz(request):
 
         new_quiz = Quizzes(user_id=profile, correct_count=score, total_questions=questions, accuracy=score / questions * 100)
         new_quiz.save()
-
         request.session.pop("quiz", None)
 
         username = request.session.get("username")
@@ -196,8 +199,11 @@ def submit_quiz(request):
                 correct_index = ord(correct_letter) - 65
                 correct_option = quiz[index]["options"][correct_index]
 
+                user_answer = quiz[index]["options"][int(request.POST.get(f"question{index + 1}")) - 1]
 
-                string = f"\nThe question was : {question} | Correct answer was: {correct_option}"
+
+
+                string = f"\nThe question was : {question} | User's answers was: {user_answer} | Correct answer was: {correct_option}\n"
                 wrong_questions += string
                                                
 
@@ -207,12 +213,36 @@ def submit_quiz(request):
 
                 {wrong_questions}
 
-                Explain why the correct answer is right, what idea I misunderstood, and guide me to the correct reasoning without giving any extra unrelated info."""
-            
-            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions})
+                Explain why the correct answer is right, what idea I misunderstood, and guide me to the correct reasoning without giving any extra unrelated info.""",
+
+            store_in_vdb(wrong_questions, user_id)
+
+            agent_prompt = f"""
+            User ID: {user_id}
+
+            Here are the questions the user got wrong:
+
+            {wrong_questions}
+
+            Your job:
+            - Retrieve similar quizzes from this user's quiz history.
+            - Identify common patterns.
+            - Explain what topics they need to revise.
+            - Give tips, suggestions, tricks, and feedback.
+            """
+
+            agent_response = agent.invoke({"messages": [agent_prompt]})
+            agent_response = agent_response['messages'][-1].content
+
+            md = MarkdownIt().use(texmath_plugin)
+            agent_response = md.render(agent_response)
+
+
+
+            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions, "agent_feedback": agent_response})
         
         else:
-            prompt = f"No prompt to see here! Congratulations for acing the test!<3"
+            prompt = f"No prompt or feedback to see here! Congratulations for acing the test!<3"
             
             return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions})
         
@@ -240,7 +270,7 @@ def progress(request):
 
         i = 0
 
-        while (i < len(total_quizzes_taken) - 1 and (total_quizzes_taken[i].timestamp.date() - total_quizzes_taken[i + 1].timestamp.date()) == timedelta(days=1)):
+        while i < len(total_quizzes_taken) - 1 and (total_quizzes_taken[i].timestamp.date() - total_quizzes_taken[i + 1].timestamp.date()) == timedelta(days=1):
             streak += 1
             i+= 1
 
