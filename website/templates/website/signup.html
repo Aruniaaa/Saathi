@@ -69,7 +69,7 @@
           <p class="text-sm text-red-400 text-center">{{ message }}</p>
         </div>
         {% endif %}
-<form action="{% url 'signup' %}"" class="space-y-6" method="POST">
+<form action="{% url 'signup' %}" class="space-y-6" method="POST">
   {% csrf_token %}
 <div>
 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="username">Username</label>

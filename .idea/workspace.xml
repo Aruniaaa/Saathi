@@ -5,9 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ba55b92d-063c-4a31-a328-e9a08e090c9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Saathi/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/Saathi/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/website/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/chat.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/chat.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/contacts.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/contacts.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/home.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/login.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/login.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/progress.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/progress.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/quiz_404.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/quiz_404.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/quiz_gen.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/quiz_gen.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/website/templates/website/quiz_submit.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/quiz_submit.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/website/templates/website/signup.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/signup.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/website/templates/website/take_quiz.html" beforeDir="false" afterPath="$PROJECT_DIR$/website/templates/website/take_quiz.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/website/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/website/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/website/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/website/views.py" afterDir="false" />
@@ -53,6 +61,7 @@
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/HP/Desktop/Saathi&quot;,

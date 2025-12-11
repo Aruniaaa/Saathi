@@ -4,12 +4,12 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
-from .utils import process, return_prompt, get_quiz
+from .utils import process, return_prompt, get_quiz, return_valid_quiz
 from supabase import Client, create_client
 import os
 from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
-from .models import Profile, Quizzes
+from .models import Profile, Quizzes, WrongQuestions
 from dotenv import load_dotenv
 from functools import wraps
 from markdown_it import MarkdownIt
@@ -108,18 +108,27 @@ class ChatAPI(View):
                 'type': type(e).__name__
             }, status=500)
 
+
 @login_required
 def quiz_gen(request):
-    
+    existing_quiz = request.session.get("quiz", None)
+
     if request.method == "GET":
-        return render(request, "website/quiz_gen.html", {})
-    elif request.method == "POST":
+
+        if existing_quiz is not None:
+            return render(request, "website/quiz_gen.html", {"existing_quiz": True})
+        else:
+            return render(request, "website/quiz_gen.html", {"existing_quiz": False})
+
+
+    elif request.method == "POST" and existing_quiz is None:
         try:
             content = request.POST.get('content', None)
             file = request.FILES.get('uploaded_file', None)
 
             if not content and not file:
-                return render(request, "website/quiz_gen.html", {"message" : "Both fields can not be empty! Please upload some content."})
+                return render(request, "website/quiz_gen.html",
+                              {"message": "Both fields can not be empty! Please upload some content."})
 
             prompt = return_prompt(file, content)
 
@@ -135,8 +144,7 @@ def quiz_gen(request):
 
             except Exception as e:
                 print(e)
-                return render(request, "website/quiz_gen.html", {"message" : str(e)})
-
+                return render(request, "website/quiz_gen.html", {"message": str(e)})
 
             request.session["quiz"] = quiz_dict
 
@@ -144,8 +152,14 @@ def quiz_gen(request):
                 "generated": True
             })
         except Exception as e:
-                print(e)
-                return render(request, "website/quiz_gen.html", {"message" : str(e)})
+            print(e)
+            return render(request, "website/quiz_gen.html", {"message": str(e)})
+
+    elif existing_quiz is not None:
+        return render(request, "website/quiz_gen.html", {
+            "generated": True
+        })
+
 
 @login_required
 def take_quiz(request):
@@ -158,16 +172,20 @@ def take_quiz(request):
             return render(request, "website/quiz_404.html", {})
 
 
-
 @login_required
-def submit_quiz(request): 
+def submit_quiz(request):
     if request.method == "POST":
         score = 0
         wrong_indices = []
+        data_to_store = {}
+
+        wrong_questions_list = []
+        options = []
+        answers = []
 
         quiz = request.session.get("quiz")
         questions = len(quiz)
-        
+
         for i in range(questions):
             correct_letter = quiz[i]["answer"]
             correct_index = ord(correct_letter) - 65
@@ -176,14 +194,14 @@ def submit_quiz(request):
             else:
                 wrong_indices.append(i)
 
-        
         user_id = request.session.get("user_id")
         profile, created = Profile.objects.get_or_create(
             supabase_id=user_id,
             defaults={'supabase_id': user_id}
         )
 
-        new_quiz = Quizzes(user_id=profile, correct_count=score, total_questions=questions, accuracy=score / questions * 100)
+        new_quiz = Quizzes(user_id=profile, correct_count=score, total_questions=questions,
+                           accuracy=score / questions * 100)
         new_quiz.save()
         request.session.pop("quiz", None)
 
@@ -201,13 +219,13 @@ def submit_quiz(request):
 
                 user_answer = quiz[index]["options"][int(request.POST.get(f"question{index + 1}")) - 1]
 
-
+                wrong_questions_list.append(question)
+                options.append(quiz[index]["options"])
+                answers.append(correct_option)
 
                 string = f"\nThe question was : {question} | User's answers was: {user_answer} | Correct answer was: {correct_option}\n"
                 wrong_questions += string
-                                               
 
-            
             prompt = f"""Give me a clear explanation for each question I got wrong and help me understand the concept behind the correct answer. 
                 Here are the questions I missed:
 
@@ -237,22 +255,73 @@ def submit_quiz(request):
             md = MarkdownIt().use(texmath_plugin)
             agent_response = md.render(agent_response)
 
+            data_to_store["questions"] = wrong_questions_list
+            data_to_store["options"] = options
+            data_to_store["answers"] = answers
 
+            profile.wrong_questions_amt += len(wrong_questions_list)
+            print(
+                f"Before generating a quiz automatically, amount of wrong questions: {profile.wrong_questions_amt}\n\n")
+            profile.save()
 
-            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions, "agent_feedback": agent_response})
-        
+            new_data = WrongQuestions(
+                user_id=user_id,
+                quiz_id=new_quiz,
+                wrong_questions_data=data_to_store
+            )
+            new_data.save()
+
+            if profile.wrong_questions_amt >= 15:
+
+                i = 1
+                while len(data_to_store["questions"]) < 15:
+
+                    print("Retreiving data from past wrong answers...\n\n")
+
+                    more_data = WrongQuestions.objects.filter(user_id=user_id).exclude(id=new_data.id).select_related(
+                        'quiz_id').order_by('-quiz_id__timestamp').first()
+
+                    if not more_data:
+                        print("No more past data available")
+                        break
+
+                    past_questions = more_data.wrong_questions_data["questions"]
+                    past_options = more_data.wrong_questions_data["options"]
+                    past_answers = more_data.wrong_questions_data["answers"]
+
+                    for idx in range(len(past_questions)):
+                        if len(data_to_store["questions"]) >= 15:
+                            break
+
+                        data_to_store["questions"].append(past_questions[idx])
+                        data_to_store["options"].append(past_options[idx])
+                        data_to_store["answers"].append(past_answers[idx])
+
+                    if len(data_to_store["questions"]) >= 15:
+                        break
+
+                print(f"UPDATED DATA TO ASK QUESTIONS ON: {data_to_store}")
+
+                valid_quiz = return_valid_quiz(data_to_store)
+                request.session["quiz"] = valid_quiz
+                profile.wrong_questions_amt = 0
+                profile.save()
+                print(f"Current amount of wrong questions: {profile.wrong_questions_amt}")
+
+            return render(request, "website/quiz_submit.html",
+                          {"username": username, "score": score, "prompt": prompt, "total": questions,
+                           "agent_feedback": agent_response})
+
         else:
             prompt = f"No prompt or feedback to see here! Congratulations for acing the test!<3"
-            
-            return render(request, "website/quiz_submit.html", {"username" : username, "score" : score, "prompt": prompt, "total" : questions})
-        
-                       
 
+            return render(request, "website/quiz_submit.html",
+                          {"username": username, "score": score, "prompt": prompt, "total": questions})
 
 
 @login_required
 def progress(request):
-    
+
     if request.method == "GET":
 
         user_id = request.session.get("user_id")
@@ -275,14 +344,14 @@ def progress(request):
             i+= 1
 
         improvement_percentage = 0
-        if len(accuracies) >= 10:  
+        if len(accuracies) >= 10:
 
-            first_5_avg = sum(accuracies[-5:]) / 5 
-            last_5_avg = sum(accuracies[:5]) / 5    
-            
-            if first_5_avg > 0:  
+            first_5_avg = sum(accuracies[-5:]) / 5
+            last_5_avg = sum(accuracies[:5]) / 5
+
+            if first_5_avg > 0:
                 improvement_percentage = ((last_5_avg - first_5_avg) / first_5_avg) * 100
-        
+
         avg_acc = sum(accuracies) / len(accuracies)  if accuracies else 0
         max_acc = max(accuracies) if accuracies else 0
 
@@ -293,42 +362,11 @@ def progress(request):
             'avg_acc': round(avg_acc, 1),
             'best_acc': round(max_acc, 1),
             'streak': streak,
-            'accuracies': json.dumps(accuracies)  
+            'accuracies': json.dumps(accuracies)
         }
 
 
         return render(request, "website/progress.html", context)
-
-"""
-
-Over-writing the progress view with hardcoded values for the demo, 
-this func can easily be removed during actual production/deployment.
-
-"""
-@login_required
-def progress(request):
-    
-    if request.method == "GET":
-
-        context = {
-            'total_quizzes': 42,
-            'total_questions': 378,
-            'improvement': 24.7,
-            'avg_acc': 82.3,
-            'best_acc': 96.5,
-            'streak': 67,
-            'accuracies': json.dumps([
-            94.5, 91.2, 89.7, 93.8, 88.4, 67.67, 92.6, 87.3, 76.2, 89.9,
-            91.8, 0, 93.4, 29.5, 87.1, 92.3, 89.2, 20, 88.9, 91.5,
-            45.9, 90.4, 67, 88, 93.7, 89.5, 91.1, 87, 94.3, 90.8,
-            78, 92.5, 89.3, 93.1, 87.4, 0, 0, 95.6, 90.2, 92.8,
-            89.6, 23.2
-            ])
-        }
-
-
-        return render(request, "website/progress.html", context)
-
 
 
 

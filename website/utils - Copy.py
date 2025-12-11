@@ -248,31 +248,6 @@ agent = create_agent(
 
 
 
-def return_valid_quiz(quiz):
-
-    valid_quiz = []
-
-    for i in range(len(quiz["questions"])):
-
-        question = quiz["questions"][i]
-        answer_string = quiz["answers"][i]
-        options = quiz["options"][i]
-
-        answer_index = options.index(answer_string)
-        answer_char = chr(65 + answer_index)
-
-        dict_question = {"number" : i + 1,
-                        "question" : question,
-                         "options" : options,
-                         "answer" : answer_char
-                        }
-
-        valid_quiz.append(dict_question)
-
-    print(f"Valid quiz is: {valid_quiz}\n\n")
-
-    return valid_quiz
-
 
 
 
